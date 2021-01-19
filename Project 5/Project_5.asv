@@ -1,0 +1,37 @@
+image = imread('Car On Mountain Road.tif');
+image = im2double(image);
+var_image = var(image);
+sigma = 3.5;
+%figure, imshow(image);
+
+%% LoG
+LoG = zeros(25);
+for i = 1:25
+    for j = 1:25
+       LoG(i, j) = -(((i-13)^2 + (j-13)^2 - 2*sigma^2) / sigma^4) * exp(-((i-13)^2 + (j-13)^2)/(2*sigma^2));
+    end
+end
+
+LoG_Laplacian_image = conv2(image, LoG, 'same');
+%% Zero Crossing
+[row,column] = size(zero_crossing);
+for threshold = [0, 0.04*max(max(LoG_Laplacian_image))]
+    zero_crossing = zeros(size(image));
+    for i = 2:row-1
+        for j = 2:column-1
+            if((sign(LoG_Laplacian_image(i-1, j))*sign(LoG_Laplacian_image(i+1, j)) == -1) && (abs(LoG_Laplacian_image(i-1, j)-(LoG_Laplacian_image(i+1, j))) > threshold))
+                zero_crossing(i, j) = 1;
+            elseif((sign(LoG_Laplacian_image(i, j-1))*sign(LoG_Laplacian_image(i, j+1)) == -1) && (abs(LoG_Laplacian_image(i, j-1)-(LoG_Laplacian_image(i, j+1))) > threshold))
+                zero_crossing(i, j) = 1;
+            elseif((sign(LoG_Laplacian_image(i-1, j-1))*sign(LoG_Laplacian_image(i+1, j+1)) == -1) && (abs(LoG_Laplacian_image(i-1, j-1)-(LoG_Laplacian_image(i+1, j+1))) > threshold))
+                zero_crossing(i, j) = 1;
+            elseif((sign(LoG_Laplacian_image(i-1, j+1))*sign(LoG_Laplacian_image(i+1, j-1)) == -1) && (abs(LoG_Laplacian_image(i-1, j+1)-(LoG_Laplacian_image(i+1, j-1))) > threshold))
+                zero_crossing(i, j) = 1;
+            end
+        end
+    end
+    figure, imshow(zero_crossing), title(['threshold = ', num2str(threshold)]);
+end
+
+%% Edge Linking
+
